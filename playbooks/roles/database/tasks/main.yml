@@ -57,10 +57,12 @@
 
 - name: Create database user with name 'nginx' and password 'Welkom01!' with all database privileges
   mysql_user:
-    name: nginx
+    user: nginx
+    host: "{{ item }}"
     password: 'Welkom01!'
     priv: 'nginx.*:ALL,GRANT'
     state: present
+  with_items: "{{ groups['webservers'] }}"
 
 - name: Copy data to server
   copy:

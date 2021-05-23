@@ -7,7 +7,7 @@
       <?php
         echo "hello world";
         echo '<h2>{{ ansible_facts.hostname }}</h2>';
-      $servername = "{{groups['databaseservers'][0]}}";
+      $servername = "{{ groups['databaseservers'][0] }}";
       $username = "nginx";
       $password = "Welkom01!";
       $defaultDatabase = "nginx";
