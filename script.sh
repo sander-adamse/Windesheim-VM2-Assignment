@@ -217,6 +217,7 @@ vagrant_edit() {
     databaseservers
     (cd $DESTINATION && vagrant reload)
     (cd $DESTINATION && vagrant up)
+    sleep 1m
     (cd $DESTINATION && ansible-playbook /home/sander/VM2/playbooks/production.yml)
     exit 0
 }
