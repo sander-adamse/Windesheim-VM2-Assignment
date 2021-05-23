@@ -1,0 +1,17 @@
+# roles/loadbalancer/tasks/main.yml
+- name: Install haproxy
+  apt:
+    name:
+      - haproxy
+    state: present
+    update_cache: yes
+
+- name: Copy haproxy.cfg
+  template:
+    src: haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+  - Restart haproxy

@@ -1,0 +1,7 @@
+# playbooks/database.yml
+- name: MySQL
+  hosts: databaseservers
+  become: yes
+  roles:
+   - database
+

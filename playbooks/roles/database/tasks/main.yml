@@ -1,0 +1,84 @@
+# roles/database/tasks/main.yml
+- name: Install MySQL
+  apt:
+    name:
+      - mysql-server
+      - mysql-client
+      - python3-pip
+    state: present
+    update_cache: yes
+- name: Install MySQL python driver for root
+  pip:
+    name: pymysql
+    state: present
+
+- name: Add 'root-my.cnf.j2' to root
+  template:
+    src: "root-my.cnf.j2"
+    dest: "/root/.my.cnf"
+    owner: root
+    group: root
+    mode: 0600
+
+- name: Add 'my.cnf.2'
+  template:
+    src: "my.cnf.j2"
+    dest: "/etc/mysql/mysql.cnf"
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Ensure default user is present.
+  become: true
+  mysql_user:
+    login_user: "{{ mysql_root_username }}"
+    login_password: "{{ mysql_root_password }}"
+    name: "{{ mysql_root_username }}"
+    host: 'localhost'
+    password: "{{ mysql_root_password }}"
+    priv: '*.*:ALL,GRANT'
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+
+- name: Removes the MySQL 'Test' Database
+  mysql_db:
+    name: test
+    state: absent
+
+- name: Removes all anonymous user accounts
+  mysql_user:
+    name: ''
+    host_all: yes
+    state: absent
+
+- name: Create new database with name 'nginx'
+  mysql_db:
+    name: nginx
+    state: present
+
+- name: Create database user with name 'nginx' and password 'Welkom01!' with all database privileges
+  mysql_user:
+    name: nginx
+    password: 'Welkom01!'
+    priv: 'nginx.*:ALL,GRANT'
+    state: present
+
+- name: Copy data to server
+  copy:
+    src: script.sql
+    dest: /tmp/script.sql
+
+- name: Insert data into database
+  mysql_db:
+    name: nginx
+    state: import
+    target: /tmp/script.sql
+    login_user: "{{ mysql_root_username }}"
+    login_password: "{{ mysql_root_password }}"
+
+- name: Start/Enable MySQL
+  service:
+    name: mysql
+    state: started
+    enabled: yes
+  notify:
+  - Restart database

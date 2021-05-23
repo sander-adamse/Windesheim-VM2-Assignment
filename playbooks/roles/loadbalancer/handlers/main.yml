@@ -1,0 +1,5 @@
+# roles/loadbalancer/handlers/main.yml
+- name: Restart haproxy
+  service:
+    name: haproxy
+    state: restarted

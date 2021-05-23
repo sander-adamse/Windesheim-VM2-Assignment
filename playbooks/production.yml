@@ -1,0 +1,22 @@
+- hosts: all
+  become: yes
+  tasks:
+    - name: Install Update
+      package:
+        update_cache: yes
+        upgrade: dist
+
+- hosts: webservers
+  become: yes
+  roles:
+   - webserver
+
+- hosts: loadbalancers
+  become: yes
+  roles:
+   - loadbalancer
+
+- hosts: databaseservers
+  become: yes
+  roles:
+   - database

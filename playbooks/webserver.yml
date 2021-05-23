@@ -1,0 +1,7 @@
+# playbooks/webserver.yml
+- name: Nginx uitrollen
+  hosts: webservers
+  become: yes
+  roles:
+   - webserver
+

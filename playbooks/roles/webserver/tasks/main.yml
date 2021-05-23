@@ -1,0 +1,75 @@
+# roles/webserver/tasks/main.yml
+- name: Install nginx
+  apt:
+    name:
+      - nginx
+      - php-fpm
+      - php7.4-mysqli
+    state: present
+    update_cache: yes
+
+- name: Copy nginx.conf
+  copy:
+    src: nginx.conf
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Make folder nginxconfig.io
+  file:
+    path: /etc/nginx/nginxconfig.io
+    state: directory
+
+- name: Copy general.conf
+  copy:
+    src: general.conf
+    dest: /etc/nginx/nginxconfig.io/general.conf
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Copy security.conf
+  copy:
+    src: security.conf
+    dest: /etc/nginx/nginxconfig.io/security.conf
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Copy php_fastcgi.conf
+  copy:
+    src: php_fastcgi.conf
+    dest: /etc/nginx/nginxconfig.io/php_fastcgi.conf
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Copy sander.nl.conf
+  copy:
+    src: sander.nl.conf
+    dest: /etc/nginx/sites-available/sander.nl.conf
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Create simlink
+  file:
+    src: /etc/nginx/sites-available/sander.nl.conf
+    dest: /etc/nginx/sites-enabled/sander.nl.conf
+    state: link
+
+- name: Remove default nginx
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
+- name: Copy index
+  template:
+    src: index.php.j2
+    dest: /var/www/index.php
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+  - Restart nginx

@@ -1,0 +1,97 @@
+Vagrant.configure("2") do |config|
+  #Vagrant Hostmanager
+  config.hostmanager.enabled = false
+  config.hostmanager.manage_host= true
+
+  #Config SSH keys
+  config.ssh.insert_key = false
+  config.ssh.private_key_path = ["/home/sander/.ssh/id_rsa", "~/.vagrant.d/insecure_private_key"]
+
+  #Default Hostname
+  hostname_base = "Gerrit-productie-"
+
+  #Webservers Loop
+  if true
+    (1..2).each do |i|
+
+      #Define Full Hostname
+      hostname_full = hostname_base + "web#{i}"
+
+      #Define ID of Node
+      config.vm.define hostname_full do |node|
+
+        #Node settings
+        node.vm.box= "ubuntu/focal64"
+        node.vm.hostname = hostname_full
+      
+        #Node Network
+        node.vm.provision "file", source: "~/.ssh/id_rsa.pub", destination: "~/.ssh/authorized_keys"
+        node.vm.network "private_network", ip: "10.0.4.#{29+i}", hostname: true
+        node.vm.provision :hostmanager
+
+        #Virtualbox Settings
+        node.vm.provider "virtualbox" do |virtualbox|
+          virtualbox.name = hostname_full
+          virtualbox.memory = "2048"
+        end
+      end
+    end
+  end 
+
+  # Loadbalancers Loop
+  if true
+    (1..1).each do |i|
+
+      #Define Full Hostname
+      hostname_full = hostname_base + "loadbalancer#{i}"
+
+      #Define ID of Node
+      config.vm.define hostname_full do |node|
+
+        #Node settings
+        node.vm.box= "ubuntu/focal64"
+        node.vm.hostname = hostname_full
+  
+        #Node Network
+        node.vm.provision "file", source: "~/.ssh/id_rsa.pub", destination: "~/.ssh/authorized_keys"
+        node.vm.network "private_network", ip: "10.0.4.#{1+i}", hostname: true
+        node.vm.provision :hostmanager
+
+        #Virtualbox Settings
+        node.vm.provider "virtualbox" do |virtualbox|
+          virtualbox.name = hostname_full
+          virtualbox.memory = "1024"
+        end
+      end
+    end
+  end 
+
+  # Loadbalancers Loop
+  if true
+    (1..1).each do |i|
+
+      #Define Full Hostname
+      hostname_full = hostname_base + "database#{i}"
+
+      #Define ID of Node
+      config.vm.define hostname_full do |node|
+
+        #Node settings
+        node.vm.box= "ubuntu/focal64"
+        node.vm.hostname = hostname_full
+  
+        #Node Network
+        node.vm.provision "file", source: "~/.ssh/id_rsa.pub", destination: "~/.ssh/authorized_keys"
+        node.vm.network "private_network", ip: "10.0.4.#{9+i}", hostname: true
+        node.vm.provision :hostmanager
+
+        #Virtualbox Settings
+        node.vm.provider "virtualbox" do |virtualbox|
+          virtualbox.name = hostname_full
+          virtualbox.memory = "1024"
+        end
+      end
+    end
+  end 
+
+end

@@ -1,0 +1,9 @@
+# playbooks/loadbalancer.yml
+- hosts: webservers
+  gather_facts: yes
+
+- hosts: loadbalancers
+  become: yes
+  roles:
+    - loadbalancer
+
