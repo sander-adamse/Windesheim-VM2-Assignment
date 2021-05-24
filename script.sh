@@ -47,10 +47,15 @@ klant_gegevens() {
 }
 
 copy_files() {
+    # Create Destination
     mkdir --parents $DESTINATION
     cp /home/sander/VM2/templates/Vagrantfile $DESTINATION/Vagrantfile
     cp /home/sander/VM2/templates/ansible.cfg $DESTINATION/ansible.cfg
+    
+    # Run method inventoryfile()
     inventoryfile
+
+    # Copy all current settings from machines to settings.txt
     echo "ENVIRONMENT=$OMGEVING" >>$DESTINATION/settings.txt
     echo "SUBNET=$SUBNET" >>$DESTINATION/settings.txt
     echo "WEBSERVERS=$WEBSERVERS" >>$DESTINATION/settings.txt
