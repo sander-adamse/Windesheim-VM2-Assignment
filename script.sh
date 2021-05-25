@@ -3,12 +3,12 @@
 klant_gegevens() {
     #Klantgegevens
     read -p "Klantnaam: " KLANTNAAM
-    read -p "Environment type [test/acceptatie/productie]: " OMGEVING
+    read -p "Welke omgeving wilt u?: [test/acceptatie/productie] " OMGEVING
 
     #Webserver Instellingen
     read -p "Wilt u webservers [true/false] ?: " WEBSERVERS
     if [ $WEBSERVERS == "true" ]; then
-        read -p "Hoeveel webservers?: " WEBSERVERS_AANTAL
+        read -p "Hoeveel webservers wilt u?: " WEBSERVERS_AANTAL
         read -p "Hoeveel geheugen wilt u?: " WEBSERVERS_MEMORY
     else
         WEBSERVERS_AANTAL=0
@@ -46,16 +46,8 @@ klant_gegevens() {
     DESTINATION="/home/sander/VM2/klanten/$KLANTNAAM/$OMGEVING"
 }
 
-copy_files() {
-    # Create Destination
-    mkdir --parents $DESTINATION
-    cp /home/sander/VM2/templates/Vagrantfile $DESTINATION/Vagrantfile
-    cp /home/sander/VM2/templates/ansible.cfg $DESTINATION/ansible.cfg
-    
-    # Run method inventoryfile()
-    inventoryfile
-
-    # Copy all current settings from machines to settings.txt
+# Copy all current settings from machines to settings.txt
+oude_instellingen_kopieren() {
     echo "ENVIRONMENT=$OMGEVING" >>$DESTINATION/settings.txt
     echo "SUBNET=$SUBNET" >>$DESTINATION/settings.txt
     echo "WEBSERVERS=$WEBSERVERS" >>$DESTINATION/settings.txt
@@ -71,25 +63,17 @@ copy_files() {
     echo "DATABASESERVERS_MEMORY=$DATABASESERVERS_MEMORY" >>$DESTINATION/settings.txt
 }
 
-#Replace all settings in Vagrant file with variables
-webservers() {
-    sed -i "s/{{ webservers }}/$WEBSERVERS/g" "$DESTINATION/Vagrantfile"
-    sed -i "s/{{ webservers_aantal }}/$WEBSERVERS_AANTAL/g" "$DESTINATION/Vagrantfile"
-    sed -i "s/{{ webservers_memory }}/$WEBSERVERS_MEMORY/g" "$DESTINATION/Vagrantfile"
-}
+copy_files() {
+    # Create Destination
+    mkdir --parents $DESTINATION
+    cp /home/sander/VM2/templates/Vagrantfile $DESTINATION/Vagrantfile
+    cp /home/sander/VM2/templates/ansible.cfg $DESTINATION/ansible.cfg
 
-#Replace all settings in Vagrant file with variables
-loadbalancers() {
-    sed -i "s/{{ loadbalancers }}/$LOADBALANCERS/g" "$DESTINATION/Vagrantfile"
-    sed -i "s/{{ loadbalancers_aantal }}/$LOADBALANCERS_AANTAL/g" "$DESTINATION/Vagrantfile"
-    sed -i "s/{{ loadbalancers_memory }}/$LOADBALANCERS_MEMORY/g" "$DESTINATION/Vagrantfile"
-}
+    # Copy all current settings from machines to settings.txt
+    oude_instellingen_kopieren
 
-#Replace all settings in Vagrant file with variables
-databaseservers() {
-    sed -i "s/{{ databaseservers }}/$DATABASESERVERS/g" "$DESTINATION/Vagrantfile"
-    sed -i "s/{{ databaseservers_aantal }}/$DATABASESERVERS_AANTAL/g" "$DESTINATION/Vagrantfile"
-    sed -i "s/{{ databaseservers_memory }}/$DATABASESERVERS_MEMORY/g" "$DESTINATION/Vagrantfile"
+    # Run method inventoryfile()
+    inventoryfile
 }
 
 #Create Inventory.ini file
@@ -108,7 +92,6 @@ inventoryfile() {
         echo "[webservers]" >>$DESTINATION/inventory.ini
         COUNTER=0
         while [ $COUNTER -lt $WEBSERVERS_AANTAL ]; do
-            #Adding 5 -> Range
             echo "$SUBNET$(expr $COUNTER + 30)" >>$DESTINATION/inventory.ini
             COUNTER=$(expr $COUNTER + 1)
         done
@@ -142,6 +125,27 @@ inventoryfile() {
         done
         echo "" >>$DESTINATION/inventory.ini
     fi
+}
+
+#Replace all settings in Vagrant file with variables
+webservers() {
+    sed -i "s/{{ webservers }}/$WEBSERVERS/g" "$DESTINATION/Vagrantfile"
+    sed -i "s/{{ webservers_aantal }}/$WEBSERVERS_AANTAL/g" "$DESTINATION/Vagrantfile"
+    sed -i "s/{{ webservers_memory }}/$WEBSERVERS_MEMORY/g" "$DESTINATION/Vagrantfile"
+}
+
+#Replace all settings in Vagrant file with variables
+loadbalancers() {
+    sed -i "s/{{ loadbalancers }}/$LOADBALANCERS/g" "$DESTINATION/Vagrantfile"
+    sed -i "s/{{ loadbalancers_aantal }}/$LOADBALANCERS_AANTAL/g" "$DESTINATION/Vagrantfile"
+    sed -i "s/{{ loadbalancers_memory }}/$LOADBALANCERS_MEMORY/g" "$DESTINATION/Vagrantfile"
+}
+
+#Replace all settings in Vagrant file with variables
+databaseservers() {
+    sed -i "s/{{ databaseservers }}/$DATABASESERVERS/g" "$DESTINATION/Vagrantfile"
+    sed -i "s/{{ databaseservers_aantal }}/$DATABASESERVERS_AANTAL/g" "$DESTINATION/Vagrantfile"
+    sed -i "s/{{ databaseservers_memory }}/$DATABASESERVERS_MEMORY/g" "$DESTINATION/Vagrantfile"
 }
 
 #Destroy Function
@@ -210,33 +214,61 @@ vagrant_edit() {
         WEBSERVERS_AANTAL_OLD=$(expr $DATABASESERVERS_AANTAL_OLD - 1)
     done
 
+    # Verwijdert alle oude bestanden van klant
     rm "$DESTINATION/Vagrantfile"
     rm "$DESTINATION/settings.txt"
     rm "$DESTINATION/inventory.ini"
     rm "$DESTINATION/ansible.cfg"
+
+    # Vervolgens worden de gegevens opnieuw aangevraagt met de huidige instellingen
     copy_files
+
+    # Verandert de hostname en het subnet van de klant
     sed -i "s/{{ hostname_default }}/$EDITKLANT-$EDITOMGEVING-/g" "$DESTINATION/Vagrantfile"
     sed -i "s/{{ subnet }}/$SUBNET/g" "$DESTINATION/Vagrantfile"
+
+    # Roept verschillende functies opnieuw op
     webservers
-    loadbalancers
+    Loadbalancers
     databaseservers
+
+    # Als laatst wordt de omgeving opnieuw aangemaakt
     (cd $DESTINATION && vagrant reload)
     (cd $DESTINATION && vagrant up)
+
+    # De sleep is hier belangrijk omdat er anders een error kan plaats vinden doordat hij te snel een playbook wilt uitvoeren
     sleep 1m
+
+    # Playbook uitdraaien
     (cd $DESTINATION && ansible-playbook /home/sander/VM2/playbooks/production.yml)
     exit 0
 }
 
-#Main file
+# Dit is de hoofdfunctie die wordt aangeroepen om een complete gebruiker aan te maken
 vagrant_main() {
+    # Klant aanmaken functie
     klant_gegevens
+
+    # Nieuwe klanten map
     copy_files
+
+    # Verandert de hostname en het subnet van de klant
     sed -i "s/{{ hostname_default }}/$KLANTNAAM-$OMGEVING-/g" "$DESTINATION/Vagrantfile"
     sed -i "s/{{ subnet }}/$SUBNET/g" "$DESTINATION/Vagrantfile"
+
+    # Roept verschillende functies opnieuw op
     webservers
     loadbalancers
     databaseservers
+
+    # Als laatst wordt de omgeving opnieuw aangemaakt
+    (cd $DESTINATION && vagrant reload)
     (cd $DESTINATION && vagrant up)
+
+    # De sleep is hier belangrijk omdat er anders een error kan plaats vinden doordat hij te snel een playbook wilt uitvoeren
+    sleep 1m
+
+    # Playbook uitdraaien
     (cd $DESTINATION && ansible-playbook /home/sander/VM2/playbooks/production.yml)
     exit 0
 }
